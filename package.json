@@ -1,0 +1,35 @@
+{
+  "name": "dosgato-resizer-sharp",
+  "version": "1.0.0",
+  "description": "Self-contained service to connect to a DosGato CMS database and file store and process the requestedresizes queue.",
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "mime-types": "^2.1.35",
+    "mysql2-async": "^1.1.10",
+    "nanoid": "^4.0.2",
+    "sharp": ">=0.32.1",
+    "txstate-utils": "^1.8.9"
+  },
+  "devDependencies": {
+    "@types/mime-types": "^2.1.1",
+    "@types/node": "^18.7.14",
+    "eslint-config-standard-with-typescript": "^34.0.0",
+    "typescript": "^5.0.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/txstate-etc/dosgato-resizer-sharp.git"
+  },
+  "keywords": [
+    "dosgato"
+  ],
+  "author": "Nick Wing",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/txstate-etc/dosgato-resizer-sharp/issues"
+  },
+  "homepage": "https://github.com/txstate-etc/dosgato-resizer-sharp#readme"
+}
