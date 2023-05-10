@@ -6,6 +6,10 @@ import { keyby, roundTo, sleep, someAsync, stringify } from 'txstate-utils'
 import { fileHandler } from './filehandler.js'
 import { randomInt } from 'node:crypto'
 
+let stopasap = false
+process.on('SIGINT', () => { stopasap = true })
+process.on('SIGTERM', () => { stopasap = true })
+
 async function registerResize (originalChecksum: string, width: number, height: number, shasum: string, mime: string, quality: number, size: number, lossless: boolean, tdb: Queryable = db) {
   const origBinaryId = await tdb.getval<number>('SELECT id FROM binaries WHERE shasum=?', [originalChecksum])
   const binaryId = await tdb.insert(`
@@ -31,6 +35,7 @@ const resizeLimit = process.env.RESIZE_LIMIT ? parseInt(process.env.RESIZE_LIMIT
 async function processResizesLoop () {
   while (true) {
     let found = false
+    if (stopasap) process.exit()
     try {
       const row = await db.getrow<{ binaryId: number, shasum: string }>('SELECT rr.binaryId, b.shasum FROM requestedresizes rr INNER JOIN binaries b ON b.id=rr.binaryId WHERE rr.withError=0 AND rr.completed IS NULL AND (rr.started IS NULL OR rr.started < NOW() - INTERVAL 20 MINUTE) ORDER BY rr.binaryId LIMIT 1')
       if (row) {
