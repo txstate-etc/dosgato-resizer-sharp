@@ -123,7 +123,7 @@ async function createResizes (shasum: string) {
   try {
     const info = await fileHandler.sharp(shasum, { limitInputPixels: 50000 * 50000 }).metadata()
     const orientation = info.orientation ?? 1
-    const animated = (info.pages ?? 0) > 0 && info.format !== 'heif'
+    const animated = (info.pages ?? 0) > 1 && info.format !== 'heif'
     const transparency = info.hasAlpha
     const img = fileHandler.sharp(shasum, { animated, limitInputPixels: 50000 * 50000 })
 
