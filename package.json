@@ -9,14 +9,14 @@
   "dependencies": {
     "mime-types": "^2.1.35",
     "mysql2-async": "^1.1.10",
-    "nanoid": "^4.0.2",
+    "nanoid": "^5.0.1",
     "sharp": ">=0.32.1",
     "txstate-utils": "^1.8.9"
   },
   "devDependencies": {
     "@types/mime-types": "^2.1.1",
-    "@types/node": "^18.7.14",
-    "eslint-config-standard-with-typescript": "^34.0.0",
+    "@types/node": "^20.6.0",
+    "eslint-config-standard-with-typescript": "^39.0.0",
     "typescript": "^5.0.4"
   },
   "repository": {

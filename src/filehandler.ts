@@ -54,8 +54,21 @@ class FileSystemHandler implements FileHandler {
     let size = 0
     stream.on('data', (data: Buffer) => { hash.update(data); size += data.length })
     try {
-      await pipeline(stream, createWriteStream(tmp))
+      const out = createWriteStream(tmp)
+      const flushedPromise = new Promise((resolve, reject) => {
+        out.on('close', resolve)
+        out.on('error', reject)
+      })
+      await pipeline(stream, out)
+      await flushedPromise
       const checksum = hash.digest('base64url')
+      const rereadhash = createHash('sha256')
+      const read = createReadStream(tmp)
+      for await (const chunk of read) {
+        rereadhash.update(chunk)
+      }
+      const rereadsum = rereadhash.digest('base64url')
+      if (rereadsum !== checksum) throw new Error('File did not write to disk correctly. Please try uploading again.')
       await this.#moveToPerm(tmp, checksum)
       return { checksum, size }
     } catch (e: any) {

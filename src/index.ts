@@ -195,6 +195,7 @@ async function createResizes (shasum: string) {
     await db.transaction(async db => {
       await db.delete('DELETE r FROM resizes r INNER JOIN binaries b ON r.originalBinaryId=b.id WHERE b.shasum=?', [shasum])
       for (const r of resizes) {
+        console.info('created resize of', shasum, 'with width', r.width, 'and format', r.mime)
         await registerResize(shasum, r.width, r.height, r.shasum, r.mime, r.quality, r.size, r.lossless, db)
       }
     }, { retries: 3 })

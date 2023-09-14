@@ -1,4 +1,4 @@
-FROM node:18-alpine as build
+FROM node:20-alpine as build
 WORKDIR /usr/app
 COPY package.json ./
 COPY package-lock.json ./
@@ -7,7 +7,7 @@ COPY tsconfig.json ./
 COPY src src
 RUN npm run build
 
-FROM node:18-alpine
+FROM node:20-alpine
 RUN apk add vips-heif libheif-dev vips-dev --repository=https://dl-cdn.alpinelinux.org/alpine/edge/community --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
 WORKDIR /usr/app
 COPY package.json ./
