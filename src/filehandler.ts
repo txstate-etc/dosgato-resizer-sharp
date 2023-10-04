@@ -89,6 +89,13 @@ class FileSystemHandler implements FileHandler {
       await pipeline(img.clone(), hash)
       const checksum = hash.read()
       const info = await img.toFile(tmp)
+      const rereadhash = createHash('sha256')
+      const read = createReadStream(tmp)
+      for await (const chunk of read) {
+        rereadhash.update(chunk)
+      }
+      const rereadsum = rereadhash.digest('base64url')
+      if (rereadsum !== checksum) throw new Error('File did not write to disk correctly during sharpjs resize operation.')
       await this.#moveToPerm(tmp, checksum)
       return { checksum, info }
     } catch (e: any) {
@@ -100,7 +107,7 @@ class FileSystemHandler implements FileHandler {
   async remove (checksum: string) {
     const filepath = this.#getFileLocation(checksum)
     try {
-      await unlink(filepath); return
+      await unlink(filepath)
     } catch (e: any) {
       if (e.code === 'ENOENT') console.warn('Tried to delete file with checksum', checksum, 'but it did not exist.')
       else console.warn(e)
