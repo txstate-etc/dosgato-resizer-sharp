@@ -1,6 +1,6 @@
 {
   "name": "dosgato-resizer-sharp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Self-contained service to connect to a DosGato CMS database and file store and process the requestedresizes queue.",
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "mime-types": "^2.1.35",
-    "mysql2-async": "^1.1.10",
+    "mysql2-async": "^2.0.0",
     "nanoid": "^5.0.1",
     "sharp": ">=0.32.1",
     "txstate-utils": "^1.8.9"
