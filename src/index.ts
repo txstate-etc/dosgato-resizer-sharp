@@ -124,8 +124,9 @@ async function createResizes (shasum: string) {
     const info = await fileHandler.sharp(shasum, { limitInputPixels: 50000 * 50000 }).metadata()
     const orientation = info.orientation ?? 1
     const animated = (info.pages ?? 0) > 1 && info.format !== 'heif'
-    const transparency = info.hasAlpha
     const img = fileHandler.sharp(shasum, { animated, limitInputPixels: 50000 * 50000 })
+    const stats = await img.stats()
+    const transparency = !stats.isOpaque
 
     let uselossless: boolean | undefined
     for (let w = meta.width; w >= 50; w = roundTo(w / 2)) {
@@ -146,8 +147,8 @@ async function createResizes (shasum: string) {
       }
 
       if (uselossless !== false) {
-        // try making a near-lossless version and see whether it's acceptably small
-        const lossless = resized.clone().webp({ quality: 75, effort: 6, loop: info.loop ?? 0, nearLossless: true })
+        // try making a lossless version and see whether it's acceptably small
+        const lossless = resized.clone().webp({ quality: 100, effort: 6, loop: info.loop ?? 0, lossless: true })
         const { checksum: losslesssum, info: losslessinfo } = await fileHandler.sharpWrite(lossless)
         if (uselossless === true || losslessinfo.size < webpinfo!.size * 1.2) {
           if (webpsum) await cleanupBinaries([webpsum])

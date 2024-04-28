@@ -65,7 +65,7 @@ class FileSystemHandler implements FileHandler {
       const rereadhash = createHash('sha256')
       const read = createReadStream(tmp)
       for await (const chunk of read) {
-        rereadhash.update(chunk)
+        rereadhash.update(chunk as Buffer)
       }
       const rereadsum = rereadhash.digest('base64url')
       if (rereadsum !== checksum) throw new Error('File did not write to disk correctly. Please try uploading again.')
@@ -87,12 +87,12 @@ class FileSystemHandler implements FileHandler {
     const hash = createHash('sha256', { encoding: 'base64url' })
     try {
       await pipeline(img.clone(), hash)
-      const checksum = hash.read()
+      const checksum = hash.read() as string
       const info = await img.toFile(tmp)
       const rereadhash = createHash('sha256')
       const read = createReadStream(tmp)
       for await (const chunk of read) {
-        rereadhash.update(chunk)
+        rereadhash.update(chunk as Buffer)
       }
       const rereadsum = rereadhash.digest('base64url')
       if (rereadsum !== checksum) throw new Error('File did not write to disk correctly during sharpjs resize operation.')
