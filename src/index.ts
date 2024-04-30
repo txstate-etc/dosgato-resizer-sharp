@@ -128,7 +128,9 @@ async function createResizes (shasum: string) {
     const stats = await img.stats()
     const transparency = !stats.isOpaque
 
-    let uselossless: boolean | undefined
+    // setting uselossless to false to disable lossless resizes - they seem to never
+    // be more efficient and the lossy quality of line art is still quite good
+    let uselossless: boolean | undefined = false
     for (let w = meta.width; w >= 50; w = roundTo(w / 2)) {
       if (w > 10000) continue // sanity check for huge images, note: webp can't save something greater than 16000x16000
       const resized = img.clone().resize(Math.min(6000, w), null, { kernel: 'mitchell' })
@@ -148,7 +150,7 @@ async function createResizes (shasum: string) {
 
       if (uselossless !== false) {
         // try making a lossless version and see whether it's acceptably small
-        const lossless = resized.clone().webp({ quality: 100, effort: 6, loop: info.loop ?? 0, lossless: true })
+        const lossless = resized.clone().webp({ quality: 60, effort: 6, loop: info.loop ?? 0, nearLossless: true })
         const { checksum: losslesssum, info: losslessinfo } = await fileHandler.sharpWrite(lossless)
         if (uselossless === true || losslessinfo.size < webpinfo!.size * 1.2) {
           if (webpsum) await cleanupBinaries([webpsum])
