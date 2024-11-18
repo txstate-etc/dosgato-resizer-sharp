@@ -1,47 +1,46 @@
-FROM node:20-slim as build
+FROM node:20-bookworm-slim AS build
 
 RUN apt-get update && apt-get install -y \
-	build-essential \
-	ninja-build \
-	meson \
-	wget \
-	pkg-config
+  build-essential \
+  ninja-build \
+  meson \
+  wget \
+  pkg-config
 
 RUN apt-get install -y \
-	glib-2.0-dev \
+  libglib2.0-dev \
   libarchive-dev \
   libcgif-dev \
-	libexpat-dev \
+  libexif-dev \
+  libexpat-dev \
   libfftw3-dev \
+  libgirepository1.0-dev \
   libheif-dev \
   libimagequant-dev \
-	librsvg2-dev \
-  libjpeg62-turbo-dev \
-  libopenjp2-7-dev \
   libjxl-dev \
-  libpng-dev \
-  libgif-dev \
-	libexif-dev \
-	liblcms2-dev \
-	libpango1.0-dev \
+  liblcms2-dev \
+  libmatio-dev \
+  libopenjp2-7-dev \
+  liborc-dev \
+  libpango1.0-dev \
   libpoppler-glib-dev \
+  libpng-dev \
+  librsvg2-dev \
   libtiff5-dev \
-  libwebp-dev \
-	libgirepository1.0-dev \
-	liborc-dev
+  libwebp-dev
 
-ARG VIPS_VERSION=8.15.2
+ARG VIPS_VERSION=8.15.3
 ARG VIPS_URL=https://github.com/libvips/libvips/releases/download
 
 WORKDIR /usr/local/src
 
 RUN wget ${VIPS_URL}/v${VIPS_VERSION}/vips-${VIPS_VERSION}.tar.xz \
-	&& tar xf vips-${VIPS_VERSION}.tar.xz \
-	&& cd vips-${VIPS_VERSION} \
-	&& meson build --buildtype=release --libdir=lib \
-	&& cd build \
-	&& ninja \
-	&& ninja install
+  && tar xf vips-${VIPS_VERSION}.tar.xz \
+  && cd vips-${VIPS_VERSION} \
+  && meson build --buildtype=release --libdir=lib \
+  && cd build \
+  && ninja \
+  && ninja install
 
 WORKDIR /usr/app
 COPY package.json ./
@@ -50,32 +49,32 @@ RUN npm ci
 COPY tsconfig.json ./
 COPY src src
 RUN npm run build
+RUN npm prune --omit=dev
 
-FROM node:20-slim
+FROM node:20-bookworm-slim
 RUN apt-get update && apt-get install -y \
-glib-2.0-dev \
-libarchive-dev \
-libcgif-dev \
-libexpat-dev \
-libfftw3-dev \
-libheif-dev \
-libimagequant-dev \
-librsvg2-dev \
-libjpeg62-turbo-dev \
-libopenjp2-7-dev \
-libjxl-dev \
-libpng-dev \
-libgif-dev \
-libexif-dev \
-liblcms2-dev \
-libpango1.0-dev \
-libpoppler-glib-dev \
-libtiff5-dev \
-libwebp-dev \
-libgirepository1.0-dev \
-liborc-dev
+  libglib2.0 \
+  libarchive13 \
+  libcgif0 \
+  libexif12 \
+  libexpat1 \
+  libfftw3-bin \
+  libgirepository-1.0-1 \
+  libheif1 \
+  libimagequant0 \
+  libjxl0.7 \
+  liblcms2-2 \
+  libmatio11 \
+  libopenjp2-7 \
+  liborc-0.4-0 \
+  libpango1.0-dev \
+  libpoppler-glib-dev \
+  libpng-dev \
+  librsvg2-dev \
+  libtiff5-dev \
+  libwebp-dev
 
-ENV LD_LIBRARY_PATH /usr/local/lib
+ENV LD_LIBRARY_PATH=/usr/local/lib
 COPY --from=build /usr/local/lib /usr/local/lib
 COPY --from=build /usr/local/bin/vips* /usr/local/bin
 WORKDIR /usr/app
