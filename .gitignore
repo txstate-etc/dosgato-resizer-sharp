@@ -130,3 +130,7 @@ dist
 .pnp.*
 qual.sh
 prod.sh
+
+# test harness output
+test/test-results/*
+!test/test-results/.gitkeep

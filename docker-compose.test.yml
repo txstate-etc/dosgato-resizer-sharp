@@ -1,0 +1,77 @@
+services:
+  resizer:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    depends_on:
+      mysql:
+        condition: service_healthy
+      # The resizer starts polling requestedresizes immediately, so the
+      # original image must already be in the file store or the resize would
+      # fail and set withError=1 (which requires human intervention to reset).
+      seed-files:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_DATABASE: dosgato
+      MYSQL_USER: user
+      MYSQL_PASS: password
+      RESIZE_LIMIT: '2'
+      # Exercises the migration short-circuit for binaries that already have
+      # migratedresizeinfo rows (binary 3, and binary 1 when re-queued).
+      # Binaries without such rows still take the normal resize path.
+      DOSGATO_MIGRATION: 'true'
+    volumes:
+      - files:/files
+
+  mysql:
+    image: mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: secret
+      MARIADB_DATABASE: dosgato
+      MARIADB_USER: user
+      MARIADB_PASSWORD: password
+    volumes:
+      # Creates the four tables the resizer touches (DDL copied from
+      # dosgato's src/createdb.ts) and seeds the binaries/requestedresizes
+      # queue before the resizer starts.
+      - ./test/mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  # Places test/files/original.png into the shared files volume at its
+  # sharded checksum path and creates /files/tmp (the resizer never calls
+  # fileHandler.init(), so the tmp dir must pre-exist). Reports healthy once
+  # seeded, then stays alive: `up --abort-on-container-exit` would tear the
+  # whole stack down the moment any container exits.
+  seed-files:
+    image: node:24-alpine
+    volumes:
+      - ./test/files:/seed:ro
+      - ./test/seed-files.mjs:/seed-files.mjs:ro
+      - files:/files
+    command: sh -c "node /seed-files.mjs && touch /tmp/seeded && tail -f /dev/null"
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/seeded"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+
+  testing-container:
+    depends_on:
+      resizer:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: test/Dockerfile
+    volumes:
+      - ./test/test-results:/test-results
+      # Read-only view of the file store so tests can assert the resized
+      # files actually landed at their sharded checksum paths.
+      - files:/files:ro
+
+volumes:
+  files:
