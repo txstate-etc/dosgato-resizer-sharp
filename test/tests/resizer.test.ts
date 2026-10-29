@@ -1,11 +1,15 @@
 import { expect, test } from '@playwright/test'
 import { stat } from 'node:fs/promises'
+import sharp from 'sharp'
 import {
-  expectedErrorIds, getall, getResizes, migratedBinaryId, migratedResizedBytes,
-  migratedResizedChecksum, missingFileBinaryId, pdfBinaryId, pngBinaryId,
-  pngBytes, pngChecksum, pngHeight, pngWidth, pool, seededBinaryCount,
-  storagePath, svgBinaryId, transparentBinaryId, transparentHeight,
-  transparentWidth, waitForQueueDrained
+  animatedDelay, animatedGifBinaryId, animatedHeight, animatedPages,
+  animatedWebpBinaryId, animatedWebpBytes, animatedWidth, expectedErrorIds,
+  getall, getResizes, migratedBinaryId, migratedResizedBytes,
+  migratedResizedChecksum, missingFileBinaryId, orientationSamples,
+  pdfBinaryId, pngBinaryId, pngBytes, pngChecksum, pngHeight, pngWidth, pool,
+  type ResizeRow, seededBinaryCount, storagePath, svgBinaryId,
+  transparentBinaryId, transparentHeight, transparentWidth,
+  waitForQueueDrained
 } from './common.js'
 
 test.afterAll(async () => {
@@ -95,6 +99,99 @@ test('produces png instead of jpeg for an image with transparency', async () => 
   }
 })
 
+/**
+ * Decode every resize of an animated original and check that it is still an
+ * animation with the original's frames, timing and loop count. The resizes
+ * row's height must be the per-frame height, not the stacked height of all
+ * frames that sharp reports for animated output.
+ */
+async function expectAnimationPreserved (originalBinaryId: number, loop: number) {
+  const resizes = await getResizes(originalBinaryId)
+  expect(resizes.length).toBeGreaterThan(0)
+  for (const r of resizes) {
+    const label = `${r.mime} ${r.width}`
+    expect(['image/gif', 'image/webp'], label).toContain(r.mime)
+    expect(Math.abs(r.height - r.width * (animatedHeight / animatedWidth)), label).toBeLessThanOrEqual(0.5)
+    expect(r.quality, label).toBe(r.mime === 'image/webp' ? 75 : 0)
+    const meta = await sharp(storagePath(r.shasum), { animated: true }).metadata()
+    expect(meta.format, label).toBe(r.mime === 'image/gif' ? 'gif' : 'webp')
+    expect(meta.width, label).toBe(r.width)
+    expect(meta.pages, label).toBe(animatedPages)
+    expect(Math.abs(meta.pageHeight! - r.height), label).toBeLessThanOrEqual(1)
+    expect(meta.delay, label).toEqual(animatedDelay)
+    expect(meta.loop, label).toBe(loop)
+  }
+  return resizes
+}
+
+test('keeps every frame, delay and the infinite loop when resizing an animated gif', async () => {
+  await waitForQueueDrained()
+  const resizes = await expectAnimationPreserved(animatedGifBinaryId, 0)
+  // animations never fall back to jpeg/png: 200, 100, 50 each as gif + webp
+  expect(new Set(resizes.map(r => `${r.mime} ${r.width}`))).toEqual(new Set(['image/gif 200', 'image/webp 200', 'image/gif 100', 'image/webp 100', 'image/gif 50', 'image/webp 50']))
+})
+
+test('keeps every frame, delay and a finite loop count when resizing an animated webp', async () => {
+  await waitForQueueDrained()
+  const resizes = await expectAnimationPreserved(animatedWebpBinaryId, 3)
+  // the full-width gif is several times larger than the webp original but is
+  // still kept, since the size rule only drops resizes of originals that are
+  // already jpeg/png/gif and the gif is the fallback for browsers without webp
+  expect(new Set(resizes.map(r => `${r.mime} ${r.width}`))).toEqual(new Set(['image/gif 200', 'image/webp 200', 'image/gif 100', 'image/webp 100', 'image/gif 50', 'image/webp 50']))
+  const fullGif = resizes.find(r => r.mime === 'image/gif' && r.width === animatedWidth)!
+  expect(fullGif.bytes).toBeGreaterThan(animatedWebpBytes)
+})
+
+/**
+ * Shrink a resize to a tiny greyscale thumbnail so two renderings of the same
+ * picture can be compared regardless of format, width or the orientation
+ * number drawn on each sample.
+ */
+async function thumbnail (r: ResizeRow, width: number, height: number) {
+  return await sharp(storagePath(r.shasum)).resize(width, height, { fit: 'fill' }).greyscale().raw().toBuffer()
+}
+
+function meanDiff (a: Buffer, b: Buffer) {
+  let sum = 0
+  for (let i = 0; i < a.length; i++) sum += Math.abs(a[i] - b[i])
+  return sum / a.length
+}
+
+for (const shape of ['landscape', 'portrait'] as const) {
+  test(`applies every exif orientation so ${shape} samples display upright`, async () => {
+    await waitForQueueDrained()
+    const samples = orientationSamples.filter(s => s.shape === shape)
+    // orientation 1 needs no transform, so its widest resize is the upright reference
+    const [reference] = await getResizes(samples[0].binaryId)
+    const [tw, th] = [samples[0].width / 12.5, samples[0].height / 12.5]
+    const refThumb = await thumbnail(reference, tw, th)
+    // halving from the displayed width; applying it to the stored pixel width
+    // instead would shrink orientations 5-8 to e.g. 338 wide
+    const widths: number[] = []
+    for (let w = samples[0].width; w >= 50; w = Math.round(w / 2)) widths.push(w)
+
+    for (const sample of samples) {
+      const resizes = await getResizes(sample.binaryId)
+      expect(resizes.length, `orientation ${sample.orientation}`).toBeGreaterThan(0)
+      for (const r of resizes) {
+        const label = `orientation ${sample.orientation}: ${r.mime} ${r.width}`
+        expect(widths, label).toContain(r.width)
+        expect(Math.abs(r.height - r.width * (sample.height / sample.width)), label).toBeLessThanOrEqual(0.5)
+        const meta = await sharp(storagePath(r.shasum)).metadata()
+        // the pixels themselves must have the displayed aspect ratio...
+        expect(meta.width, label).toBe(r.width)
+        expect(Math.abs(meta.height! - r.height), label).toBeLessThanOrEqual(1)
+        // ...with no leftover orientation tag that would make a browser rotate it again
+        expect(meta.orientation ?? 1, label).toBe(1)
+        // and the picture must match the upright reference: correctly oriented
+        // samples differ by ~1 grey level on average, a wrong flip or rotation
+        // by 30 or more
+        expect(meanDiff(refThumb, await thumbnail(r, tw, th)), label).toBeLessThan(10)
+      }
+    }
+  })
+}
+
 test('registers pre-migrated resizes without reading the original', async () => {
   await waitForQueueDrained()
   // binary 3's original file does not exist, so completing proves the
@@ -124,12 +221,11 @@ test('skips the svg and the pdf without erroring and without creating resizes', 
   await waitForQueueDrained()
   expect(await getResizes(svgBinaryId)).toHaveLength(0)
   expect(await getResizes(pdfBinaryId)).toHaveLength(0)
-  // no stray binaries were registered either: the six seeded originals, one
-  // row per resize of the two real images, and the registered migrated resize
-  const pngResizes = await getResizes(pngBinaryId)
-  const transparentResizes = await getResizes(transparentBinaryId)
+  // no stray binaries were registered either: every binary is a seeded
+  // original or a registered resize (including the migrated one)
+  const [{ resizeCount }] = await getall<{ resizeCount: number }>('SELECT COUNT(DISTINCT binaryId) AS resizeCount FROM resizes')
   const binaries = await getall<{ id: number }>('SELECT id FROM binaries')
-  expect(binaries).toHaveLength(seededBinaryCount + pngResizes.length + transparentResizes.length + 1)
+  expect(binaries).toHaveLength(seededBinaryCount + resizeCount)
 })
 
 test('re-queueing an already-processed binary is idempotent', async () => {

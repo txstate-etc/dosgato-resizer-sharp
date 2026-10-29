@@ -133,14 +133,17 @@ async function createResizes (shasum: string) {
     let uselossless: boolean | undefined = false
     for (let w = meta.width; w >= 50; w = roundTo(w / 2)) {
       if (w > 10000) continue // sanity check for huge images, note: webp can't save something greater than 16000x16000
-      const resized = img.clone().resize(Math.min(6000, w), null, { kernel: 'mitchell' })
       // theoretically one call to .rotate() is supposed to fix orientation, but
       // there seems to be a bug in sharpjs where the rotation doesn't take
       // if there is a later resize to a sufficiently small size
       // this is a workaround to make sure the exif rotation is applied in all cases
-      .flip(exifToFlip[orientation])
-      .flop(exifToFlop[orientation])
-      .rotate(exifToRotation[orientation])
+      // it must come before the resize so that w (from meta, which already has
+      // width and height swapped for orientations 5-8) applies to the upright image
+      const resized = img.clone()
+        .flip(exifToFlip[orientation])
+        .flop(exifToFlop[orientation])
+        .rotate(exifToRotation[orientation])
+        .resize(Math.min(6000, w), null, { kernel: 'mitchell' })
       let webp: sharp.Sharp | undefined, webpsum: string | undefined, webpinfo: sharp.OutputInfo | undefined
 
       if (uselossless !== true) {

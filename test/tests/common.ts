@@ -18,7 +18,26 @@ export const transparentChecksum = 'sDNqNsYP75GyV90HmCs04cbCWQJ52cH-uewcbNVKLQk'
 export const transparentWidth = 160
 export const transparentHeight = 120
 export const pdfBinaryId = 6
-export const seededBinaryCount = 6
+export const animatedGifBinaryId = 7
+export const animatedWebpBinaryId = 8
+export const animatedWebpBytes = 5642
+// both animations are 4 frames of 200x150 with these per-frame delays (ms)
+export const animatedWidth = 200
+export const animatedHeight = 150
+export const animatedPages = 4
+export const animatedDelay = [100, 200, 300, 400]
+// landscape_1..8.jpg are binaries 9-16 and portrait_1..8.jpg are 17-24, where
+// the number is the EXIF orientation; all should display upright at these
+// dimensions
+export const orientationSamples = (['landscape', 'portrait'] as const).flatMap((shape, s) =>
+  [1, 2, 3, 4, 5, 6, 7, 8].map(orientation => ({
+    shape,
+    orientation,
+    binaryId: 9 + s * 8 + orientation - 1,
+    width: shape === 'landscape' ? 600 : 450,
+    height: shape === 'landscape' ? 450 : 600
+  })))
+export const seededBinaryCount = 24
 
 // binary 4's original file is deliberately missing, so the resizer is
 // expected to flag it withError=1 rather than complete it
