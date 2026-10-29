@@ -4,23 +4,26 @@
   "description": "Self-contained service to connect to a DosGato CMS database and file store and process the requestedresizes queue.",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "rm -rf dist && tsc",
+    "lint": "eslint src",
+    "test": "./test.sh"
   },
   "dependencies": {
     "mime-types": "^2.1.35",
-    "mysql2-async": "^2.0.0",
+    "mysql2-async": "^2.0.5",
     "nanoid": "^5.0.1",
     "sharp": "0.33.5",
-    "txstate-utils": "^1.8.9"
+    "txstate-utils": "^1.10.4"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "^2.10.1",
+    "@stylistic/eslint-plugin": "^5.0.0",
     "@types/mime-types": "^2.1.1",
     "@types/node": "^20.6.0",
-    "eslint-config-love": "^97.0.0",
+    "eslint": "^10.0.0",
+    "eslint-config-love": "^158.0.0",
     "node-addon-api": "^8.0.0",
     "node-gyp": "^10.1.0",
-    "typescript": "^5.0.4"
+    "typescript": "^6.0.0"
   },
   "repository": {
     "type": "git",

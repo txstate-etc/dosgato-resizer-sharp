@@ -4,7 +4,7 @@ import { access, constants, mkdir, rename, unlink } from 'node:fs/promises'
 import { nanoid } from 'nanoid'
 import { dirname } from 'node:path'
 import sharp from 'sharp'
-import { type Readable } from 'node:stream'
+import type { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { rescue } from 'txstate-utils'
 

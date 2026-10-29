@@ -1,5 +1,5 @@
 import { lookup } from 'mime-types'
-import { type Queryable } from 'mysql2-async'
+import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
 import type sharp from 'sharp'
 import { keyby, roundTo, sleep, someAsync, stringify } from 'txstate-utils'
@@ -31,7 +31,7 @@ async function cleanupBinaries (checksums: string[]) {
   }
 }
 
-const resizeLimit = process.env.RESIZE_LIMIT ? parseInt(process.env.RESIZE_LIMIT) : 2
+const resizeLimit = process.env.RESIZE_LIMIT ? parseInt(process.env.RESIZE_LIMIT, 10) : 2
 async function processResizesLoop () {
   while (true) {
     let found = false
@@ -130,7 +130,7 @@ async function createResizes (shasum: string) {
 
     // setting uselossless to false to disable lossless resizes - they seem to never
     // be more efficient and the lossy quality of line art is still quite good
-    let uselossless: boolean | undefined = false
+    let uselossless = false as boolean | undefined
     for (let w = meta.width; w >= 50; w = roundTo(w / 2)) {
       if (w > 10000) continue // sanity check for huge images, note: webp can't save something greater than 16000x16000
       // theoretically one call to .rotate() is supposed to fix orientation, but
@@ -180,9 +180,9 @@ async function createResizes (shasum: string) {
       const { checksum, info: outputinfo } = await fileHandler.sharpWrite(formatted)
       if (
         // this resize is too big and no more compatible than the original, abort!
-        (outputinfo.size > (0.9 * binary.bytes) && ['image/jpeg', 'image/png', 'image/gif'].includes(binary.mime)) ||
+        (outputinfo.size > (0.9 * binary.bytes) && ['image/jpeg', 'image/png', 'image/gif'].includes(binary.mime))
         // this resize is somehow nearly as or larger than one of the greater-width resizes we've already made - skip it
-        resizes.some(r => outputinfo.size > (0.9 * r.size) && outputmime === r.mime)
+        || resizes.some(r => outputinfo.size > (0.9 * r.size) && outputmime === r.mime)
       ) {
         await cleanupBinaries([checksum])
       } else {
