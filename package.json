@@ -9,19 +9,19 @@
     "test": "./test.sh"
   },
   "dependencies": {
-    "mime-types": "^2.1.35",
+    "mime-types": "^3.0.2",
     "mysql2-async": "^2.0.5",
-    "nanoid": "^5.0.1",
+    "nanoid": "^6.0.2",
     "sharp": "0.35.5",
     "txstate-utils": "^1.10.4"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.0.0",
-    "@types/mime-types": "^2.1.1",
+    "@types/mime-types": "^3.0.1",
     "@types/node": "^26.6.6",
     "eslint": "^10.0.0",
     "eslint-config-love": "^158.0.0",
-    "node-addon-api": "^8.0.0",
+    "node-addon-api": "^8.9.2",
     "node-gyp": "^13.1.0",
     "typescript": "^6.0.0"
   },
