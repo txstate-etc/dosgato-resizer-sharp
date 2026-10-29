@@ -1,7 +1,7 @@
 import { lookup } from 'mime-types'
 import type { Queryable } from 'mysql2-async'
 import db from 'mysql2-async/db'
-import type sharp from 'sharp'
+import type { OutputInfo, Sharp } from 'sharp'
 import { keyby, roundTo, sleep, someAsync, stringify } from 'txstate-utils'
 import { fileHandler } from './filehandler.js'
 import { randomInt } from 'node:crypto'
@@ -144,7 +144,7 @@ async function createResizes (shasum: string) {
         .flop(exifToFlop[orientation])
         .rotate(exifToRotation[orientation])
         .resize(Math.min(6000, w), null, { kernel: 'mitchell' })
-      let webp: sharp.Sharp | undefined, webpsum: string | undefined, webpinfo: sharp.OutputInfo | undefined
+      let webp: Sharp | undefined, webpsum: string | undefined, webpinfo: OutputInfo | undefined
 
       if (uselossless !== true) {
         webp = resized.clone().webp({ quality: 75, effort: 6, loop: info.loop ?? 0 })

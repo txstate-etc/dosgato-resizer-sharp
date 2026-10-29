@@ -3,7 +3,7 @@ import { createReadStream, createWriteStream } from 'node:fs'
 import { access, constants, mkdir, rename, unlink } from 'node:fs/promises'
 import { nanoid } from 'nanoid'
 import { dirname } from 'node:path'
-import sharp from 'sharp'
+import sharp, { type OutputInfo, type Sharp, type SharpOptions } from 'sharp'
 import type { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { rescue } from 'txstate-utils'
@@ -12,8 +12,8 @@ interface FileHandler {
   init: () => Promise<void>
   put: (stream: Readable) => Promise<{ checksum: string, size: number }> // returns a checksum
   get: (checksum: string) => Readable
-  sharp: (checksum: string, opts?: sharp.SharpOptions) => sharp.Sharp
-  sharpWrite: (img: sharp.Sharp) => Promise<{ checksum: string, info: sharp.OutputInfo }> // returns a checksum
+  sharp: (checksum: string, opts?: SharpOptions) => Sharp
+  sharpWrite: (img: Sharp) => Promise<{ checksum: string, info: OutputInfo }> // returns a checksum
   remove: (checksum: string) => Promise<void>
 }
 
@@ -77,12 +77,12 @@ class FileSystemHandler implements FileHandler {
     }
   }
 
-  sharp (checksum: string, opts?: sharp.SharpOptions) {
+  sharp (checksum: string, opts?: SharpOptions) {
     const filepath = this.#getFileLocation(checksum)
     return sharp(filepath, opts)
   }
 
-  async sharpWrite (img: sharp.Sharp) {
+  async sharpWrite (img: Sharp) {
     const tmp = this.#getTmpLocation()
     const hash = createHash('sha256', { encoding: 'base64url' })
     try {
