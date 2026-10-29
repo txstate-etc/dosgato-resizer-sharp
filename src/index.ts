@@ -32,6 +32,7 @@ async function cleanupBinaries (checksums: string[]) {
 }
 
 const resizeLimit = process.env.RESIZE_LIMIT ? parseInt(process.env.RESIZE_LIMIT, 10) : 2
+const idleSleepMs = process.env.RESIZE_IDLE_MS ? parseInt(process.env.RESIZE_IDLE_MS, 10) : resizeLimit * 4 * 1000
 async function processResizesLoop () {
   while (true) {
     let found = false
@@ -58,7 +59,7 @@ async function processResizesLoop () {
     } catch (e: any) {
       console.error(e)
     }
-    if (!found) await sleep(resizeLimit * 4 * 1000)
+    if (!found) await sleep(idleSleepMs)
   }
 }
 

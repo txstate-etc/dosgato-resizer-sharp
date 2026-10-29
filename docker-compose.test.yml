@@ -3,6 +3,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
+    attach: false
     depends_on:
       mysql:
         condition: service_healthy
@@ -17,6 +18,9 @@ services:
       MYSQL_USER: user
       MYSQL_PASS: password
       RESIZE_LIMIT: '2'
+      # An idle worker normally sleeps RESIZE_LIMIT * 4s before polling again,
+      # which the re-queue test would otherwise sit through.
+      RESIZE_IDLE_MS: '500'
       # Exercises the migration short-circuit for binaries that already have
       # migratedresizeinfo rows (binary 3, and binary 1 when re-queued).
       # Binaries without such rows still take the normal resize path.
@@ -26,6 +30,7 @@ services:
 
   mysql:
     image: mariadb:11
+    attach: false
     environment:
       MARIADB_ROOT_PASSWORD: secret
       MARIADB_DATABASE: dosgato
@@ -49,6 +54,7 @@ services:
   # whole stack down the moment any container exits.
   seed-files:
     image: node:26-alpine
+    attach: false
     volumes:
       - ./test/files:/seed:ro
       - ./test/seed-files.mjs:/seed-files.mjs:ro

@@ -89,6 +89,8 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 ENV LD_LIBRARY_PATH=/usr/local/lib
+# limits glibc memory fragmentation, and lets sharp use all cores instead of defaulting to 1 on glibc
+ENV MALLOC_ARENA_MAX=2
 COPY --from=build /usr/local/lib /usr/local/lib
 COPY --from=build /usr/local/bin/vips* /usr/local/bin
 WORKDIR /usr/app

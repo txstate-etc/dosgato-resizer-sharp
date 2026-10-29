@@ -98,7 +98,7 @@ export async function waitForQueueDrained (): Promise<RequestedResizeRow[]> {
     if (Date.now() > deadline) {
       throw new Error('Timed out waiting for the requestedresizes queue to drain. Queue state: ' + JSON.stringify(rows, null, 2))
     }
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await new Promise(resolve => setTimeout(resolve, 250))
   }
 }
 
