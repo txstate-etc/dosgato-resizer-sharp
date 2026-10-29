@@ -69,39 +69,6 @@ async function beginProcessingResizes () {
   }
 }
 
-const exifToRotation: Record<number, number> = {
-  1: 0,
-  2: 0,
-  3: 180,
-  4: 0,
-  5: 270,
-  6: 90,
-  7: 270,
-  8: 270
-}
-
-const exifToFlip: Record<number, boolean> = {
-  1: false,
-  2: false,
-  3: false,
-  4: true,
-  5: false,
-  6: false,
-  7: true,
-  8: false
-}
-
-const exifToFlop: Record<number, boolean> = {
-  1: false,
-  2: true,
-  3: false,
-  4: false,
-  5: true,
-  6: false,
-  7: false,
-  8: false
-}
-
 async function createResizes (shasum: string) {
   console.info('processing', shasum)
   const binary = await db.getrow<{ id: number, shasum: string, mime: string, meta: string, bytes: number }>('SELECT * from binaries WHERE shasum=?', [shasum])
@@ -122,9 +89,10 @@ async function createResizes (shasum: string) {
   const resizes: { width: number, height: number, shasum: string, mime: string, quality: number, size: number, lossless: boolean }[] = []
   try {
     const info = await fileHandler.sharp(shasum, { limitInputPixels: 50000 * 50000 }).metadata()
-    const orientation = info.orientation ?? 1
     const animated = (info.pages ?? 0) > 1 && info.format !== 'heif'
-    const img = fileHandler.sharp(shasum, { animated, limitInputPixels: 50000 * 50000 })
+    // autoOrient makes the image upright before any other operation, so w (from meta,
+    // which already has width and height swapped for orientations 5-8) applies to the upright image
+    const img = fileHandler.sharp(shasum, { animated, autoOrient: true, limitInputPixels: 50000 * 50000 })
     const stats = await img.stats()
     const transparency = !stats.isOpaque
 
@@ -133,17 +101,7 @@ async function createResizes (shasum: string) {
     let uselossless = false as boolean | undefined
     for (let w = meta.width; w >= 50; w = roundTo(w / 2)) {
       if (w > 10000) continue // sanity check for huge images, note: webp can't save something greater than 16000x16000
-      // theoretically one call to .rotate() is supposed to fix orientation, but
-      // there seems to be a bug in sharpjs where the rotation doesn't take
-      // if there is a later resize to a sufficiently small size
-      // this is a workaround to make sure the exif rotation is applied in all cases
-      // it must come before the resize so that w (from meta, which already has
-      // width and height swapped for orientations 5-8) applies to the upright image
-      const resized = img.clone()
-        .flip(exifToFlip[orientation])
-        .flop(exifToFlop[orientation])
-        .rotate(exifToRotation[orientation])
-        .resize(Math.min(6000, w), null, { kernel: 'mitchell' })
+      const resized = img.clone().resize(Math.min(6000, w), null, { kernel: 'mitchell' })
       let webp: Sharp | undefined, webpsum: string | undefined, webpinfo: OutputInfo | undefined
 
       if (uselossless !== true) {
