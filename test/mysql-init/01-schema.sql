@@ -128,5 +128,13 @@ INSERT INTO binaries (id, shasum, mime, meta, bytes) VALUES
   (23, 'eSeUQI3Fciets0GnWldm42kEp-wOZA1syi2LFP4lwUE', 'image/jpeg', '{"width":450,"height":600}', 135366),
   (24, 'JpFmbGS2jVY_UCJsLfkhye3ugnq_QC6SK-S-LpkvsGE', 'image/jpeg', '{"width":450,"height":600}', 132543);
 
+-- HEIC: test/files/photo.heic is landscape_1.jpg re-encoded as HEVC HEIC
+-- (macOS `sips -s format heic`), the format iPhones upload. Proves the
+-- libvips build in the Dockerfile can decode it; browsers mostly can't, so
+-- the output should be jpeg + webp.
+INSERT INTO binaries (id, shasum, mime, meta, bytes) VALUES
+  (25, '5xh5JqmnyVkWPKVXn6luu5t1zjO-uz-TbgV2v1FPhQU', 'image/heic', '{"width":600,"height":450}', 72407);
+
 INSERT INTO requestedresizes (binaryId) VALUES (1), (2), (3), (4), (5), (6), (7), (8),
-  (9), (10), (11), (12), (13), (14), (15), (16), (17), (18), (19), (20), (21), (22), (23), (24);
+  (9), (10), (11), (12), (13), (14), (15), (16), (17), (18), (19), (20), (21), (22), (23), (24),
+  (25);

@@ -37,7 +37,11 @@ export const orientationSamples = (['landscape', 'portrait'] as const).flatMap((
     width: shape === 'landscape' ? 600 : 450,
     height: shape === 'landscape' ? 450 : 600
   })))
-export const seededBinaryCount = 24
+// photo.heic is landscape_1.jpg (binary 9) re-encoded as HEIC
+export const heicBinaryId = 25
+export const heicWidth = 600
+export const heicHeight = 450
+export const seededBinaryCount = 25
 
 // binary 4's original file is deliberately missing, so the resizer is
 // expected to flag it withError=1 rather than complete it

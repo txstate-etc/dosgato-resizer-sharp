@@ -4,7 +4,7 @@ import sharp from 'sharp'
 import {
   animatedDelay, animatedGifBinaryId, animatedHeight, animatedPages,
   animatedWebpBinaryId, animatedWebpBytes, animatedWidth, expectedErrorIds,
-  getall, getResizes, migratedBinaryId, migratedResizedBytes,
+  getall, getResizes, heicBinaryId, heicHeight, heicWidth, migratedBinaryId, migratedResizedBytes,
   migratedResizedChecksum, missingFileBinaryId, orientationSamples,
   pdfBinaryId, pngBinaryId, pngBytes, pngChecksum, pngHeight, pngWidth, pool,
   type ResizeRow, seededBinaryCount, storagePath, svgBinaryId,
@@ -191,6 +191,32 @@ for (const shape of ['landscape', 'portrait'] as const) {
     }
   })
 }
+
+test('decodes a heic original into jpeg and webp resizes', async () => {
+  await waitForQueueDrained()
+  const resizes = await getResizes(heicBinaryId)
+  // 600 halves down to 75, each as jpeg + webp - except webp 600, which comes
+  // out larger than 0.9x the jpeg at the same width and is skipped, as with
+  // the png. The full-width jpeg is always kept since heic isn't one of the
+  // browser-compatible formats the size rule compares against.
+  expect(new Set(resizes.map(r => `${r.mime} ${r.width}`))).toEqual(new Set([
+    'image/jpeg 600', 'image/jpeg 300', 'image/webp 300', 'image/jpeg 150', 'image/webp 150', 'image/jpeg 75', 'image/webp 75'
+  ]))
+
+  // same picture as landscape_1.jpg, so its widest resize is the reference
+  const [reference] = await getResizes(orientationSamples[0].binaryId)
+  const [tw, th] = [heicWidth / 12.5, heicHeight / 12.5]
+  const refThumb = await thumbnail(reference, tw, th)
+  for (const r of resizes) {
+    const label = `${r.mime} ${r.width}`
+    expect(['image/jpeg', 'image/webp'], label).toContain(r.mime)
+    expect(Math.abs(r.height - r.width * (heicHeight / heicWidth)), label).toBeLessThanOrEqual(0.5)
+    const info = await stat(storagePath(r.shasum))
+    expect(info.size, label).toBe(r.bytes)
+    // decoded correctly rather than garbage or a blank frame
+    expect(meanDiff(refThumb, await thumbnail(r, tw, th)), label).toBeLessThan(10)
+  }
+})
 
 test('registers pre-migrated resizes without reading the original', async () => {
   await waitForQueueDrained()
