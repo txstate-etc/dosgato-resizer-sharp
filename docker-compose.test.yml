@@ -48,7 +48,7 @@ services:
   # seeded, then stays alive: `up --abort-on-container-exit` would tear the
   # whole stack down the moment any container exits.
   seed-files:
-    image: node:24-alpine
+    image: node:26-alpine
     volumes:
       - ./test/files:/seed:ro
       - ./test/seed-files.mjs:/seed-files.mjs:ro

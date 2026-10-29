@@ -18,11 +18,11 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.0.0",
     "@types/mime-types": "^2.1.1",
-    "@types/node": "^20.6.0",
+    "@types/node": "^26.6.6",
     "eslint": "^10.0.0",
     "eslint-config-love": "^158.0.0",
     "node-addon-api": "^8.0.0",
-    "node-gyp": "^10.1.0",
+    "node-gyp": "^13.1.0",
     "typescript": "^6.0.0"
   },
   "repository": {

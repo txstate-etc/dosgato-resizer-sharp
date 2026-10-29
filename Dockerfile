@@ -1,4 +1,4 @@
-FROM node:20-bookworm-slim AS build
+FROM node:26-bookworm-slim AS build
 
 RUN apt-get update && apt-get install -y \
   build-essential \
@@ -51,7 +51,7 @@ COPY src src
 RUN npm run build
 RUN npm prune --omit=dev
 
-FROM node:20-bookworm-slim
+FROM node:26-bookworm-slim
 RUN apt-get update && apt-get install -y \
   libglib2.0 \
   libarchive13 \
